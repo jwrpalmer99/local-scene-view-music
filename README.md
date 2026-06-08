@@ -11,8 +11,10 @@ Foundry normally starts a scene playlist when the scene is activated. This modul
 - Stops the previous viewed scene sound when switching to a different track.
 - Keeps playback continuous when multiple scenes use the same sound.
 - Pauses the active scene's music locally while previewing a different scene with different music.
+- Can optionally pause the active scene's music while viewing scenes with no playlist sound.
+- Can optionally leave the active scene's music playing while viewing other scenes.
 - Resumes the active scene's music when returning to it.
-- Provides client-side settings for preview volume and audio channel.
+- Provides client-side settings for preview volume, audio channel, and active playlist pause behavior.
 
 ## Continuous Playback
 
@@ -28,8 +30,12 @@ Open **Configure Settings > Module Settings > Local Scene View Music**.
 | --- | --- | --- |
 | Volume | `0.8` | Volume used when the module plays a viewed scene sound locally. |
 | Audio channel | `Music` | Foundry audio channel used for local scene-view playback. |
+| Always pause active scene playlist | `false` | Pause the active scene playlist while viewing another scene, even if the viewed scene has no playlist sound. |
+| Never pause active scene playlist | `false` | Keep the active scene playlist playing while viewing another scene. |
 
-These settings are client-side, so each user can choose their own preview volume and channel.
+These settings are client-side, so each user can choose their own preview volume, channel, and pause behavior.
+
+If both active playlist pause settings are enabled, **Never pause active scene playlist** takes priority.
 
 ## Compatibility
 
@@ -45,6 +51,8 @@ Install the module using its manifest URL, then enable **Local Scene View Music*
 - The module only affects local playback for the current user.
 - Scene activation remains handled by Foundry's normal playlist behavior.
 - Scenes without a configured playlist sound will stop any local view sound started by this module.
+- By default, viewing a scene without a playlist sound resumes any active scene playlist that this module paused. Enable **Always pause active scene playlist** to keep the active scene playlist paused instead.
+- Enable **Never pause active scene playlist** if you want active scene music to continue underneath viewed scene music.
 
 ## License
 

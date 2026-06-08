@@ -2,7 +2,9 @@ const MODULE_ID = "local-scene-view-music";
 const LOCAL_STOP_DELAY_MS = 30000;
 const SETTINGS = {
   volume: "volume",
-  channel: "channel"
+  channel: "channel",
+  alwaysPauseActive: "alwaysPauseActive",
+  neverPauseActive: "neverPauseActive"
 };
 
 const LocalSceneViewMusic = {
@@ -55,6 +57,24 @@ const LocalSceneViewMusic = {
         environment: "Environment",
         interface: "Interface"
       }
+    });
+
+    game.settings.register(MODULE_ID, SETTINGS.alwaysPauseActive, {
+      name: "Always pause active scene playlist",
+      hint: "Pause the active scene playlist while viewing another scene, even if the viewed scene has no playlist sound.",
+      scope: "client",
+      config: true,
+      type: Boolean,
+      default: false
+    });
+
+    game.settings.register(MODULE_ID, SETTINGS.neverPauseActive, {
+      name: "Never pause active scene playlist",
+      hint: "Keep the active scene playlist playing while viewing another scene.",
+      scope: "client",
+      config: true,
+      type: Boolean,
+      default: false
     });
   },
 
@@ -195,6 +215,8 @@ const LocalSceneViewMusic = {
   },
 
   async pauseActiveSound(viewedScene) {
+    if (game.settings.get(MODULE_ID, SETTINGS.neverPauseActive)) return;
+
     const activeScene = game.scenes?.active;
     if (!activeScene || activeScene.id === viewedScene?.id) return;
 
@@ -255,6 +277,15 @@ const LocalSceneViewMusic = {
 
     if (!soundKey) {
       await this.stopLocalSound(`view changed to "${scene.name}"`);
+
+      if (game.settings.get(MODULE_ID, SETTINGS.neverPauseActive)) {
+        await this.resumeActiveSound();
+      } else if (game.settings.get(MODULE_ID, SETTINGS.alwaysPauseActive)) {
+        await this.pauseActiveSound(scene);
+      } else {
+        await this.resumeActiveSound();
+      }
+
       this.log(`No playlist sound configured for viewed scene "${scene.name}"`);
       return;
     }
@@ -268,7 +299,13 @@ const LocalSceneViewMusic = {
     if (await this.useActiveSoundForView(scene, soundKey)) return;
 
     await this.stopLocalSound(`view changed to "${scene.name}"`);
-    await this.pauseActiveSound(scene);
+
+    if (game.settings.get(MODULE_ID, SETTINGS.neverPauseActive)) {
+      await this.resumeActiveSound();
+    } else {
+      await this.pauseActiveSound(scene);
+    }
+
     await this.playLocalSound(scene, soundDoc, soundKey);
   },
 
