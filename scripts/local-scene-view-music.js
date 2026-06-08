@@ -4,7 +4,8 @@ const SETTINGS = {
   volume: "volume",
   channel: "channel",
   alwaysPauseActive: "alwaysPauseActive",
-  neverPauseActive: "neverPauseActive"
+  neverPauseActive: "neverPauseActive",
+  debugLogging: "debugLogging"
 };
 
 const LocalSceneViewMusic = {
@@ -19,6 +20,8 @@ const LocalSceneViewMusic = {
   pausedActive: null,
 
   log(...args) {
+    if (!game.settings.get(MODULE_ID, SETTINGS.debugLogging)) return;
+
     console.log(`${MODULE_ID} |`, ...args);
   },
 
@@ -71,6 +74,15 @@ const LocalSceneViewMusic = {
     game.settings.register(MODULE_ID, SETTINGS.neverPauseActive, {
       name: "Never pause active scene playlist",
       hint: "Keep the active scene playlist playing while viewing another scene.",
+      scope: "client",
+      config: true,
+      type: Boolean,
+      default: false
+    });
+
+    game.settings.register(MODULE_ID, SETTINGS.debugLogging, {
+      name: "Debug logging",
+      hint: "Write local scene music playback decisions to the browser console.",
       scope: "client",
       config: true,
       type: Boolean,
@@ -246,18 +258,6 @@ const LocalSceneViewMusic = {
     }
   },
 
-  async useActiveSoundForView(scene, soundKey) {
-    const activeScene = game.scenes?.active;
-    const activeSound = this.getSceneSound(activeScene);
-
-    if (!activeSound || this.getSoundKey(activeSound) !== soundKey) return false;
-
-    await this.stopLocalSound(`view changed to "${scene.name}" using active scene sound`);
-    await this.resumeActiveSound();
-    this.log(`Continuing active scene sound while viewing "${scene.name}"`, activeSound.path);
-    return true;
-  },
-
   async handleCanvasReady(canvas) {
     this.clearDeferredLocalStop();
 
@@ -295,8 +295,6 @@ const LocalSceneViewMusic = {
       this.log(`Continuing local view sound for "${scene.name}"`, soundDoc.path);
       return;
     }
-
-    if (await this.useActiveSoundForView(scene, soundKey)) return;
 
     await this.stopLocalSound(`view changed to "${scene.name}"`);
 

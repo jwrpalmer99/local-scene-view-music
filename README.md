@@ -9,16 +9,16 @@ Foundry normally starts a scene playlist when the scene is activated. This modul
 - Plays the viewed scene's configured playlist sound locally.
 - Does not broadcast playback changes to other users.
 - Stops the previous viewed scene sound when switching to a different track.
-- Keeps playback continuous when multiple scenes use the same sound.
+- Keeps local preview playback continuous when multiple viewed scenes use the same sound.
 - Pauses the active scene's music locally while previewing a different scene with different music.
 - Can optionally pause the active scene's music while viewing scenes with no playlist sound.
 - Can optionally leave the active scene's music playing while viewing other scenes.
 - Resumes the active scene's music when returning to it.
-- Provides client-side settings for preview volume, audio channel, and active playlist pause behavior.
+- Provides client-side settings for preview volume, audio channel, active playlist pause behavior, and debug logging.
 
 ## Continuous Playback
 
-If you move between scenes that use the same audio path and loop setting, the module keeps the existing sound playing instead of stopping and restarting it.
+If this module is already playing local preview music and you move between viewed scenes that use the same audio path and loop setting, the module keeps the existing sound playing instead of stopping and restarting it.
 
 This is useful for groups of scenes that share the same background music, such as different map levels, day/night variants, or alternate views of the same location.
 
@@ -32,8 +32,9 @@ Open **Configure Settings > Module Settings > Local Scene View Music**.
 | Audio channel | `Music` | Foundry audio channel used for local scene-view playback. |
 | Always pause active scene playlist | `false` | Pause the active scene playlist while viewing another scene, even if the viewed scene has no playlist sound. |
 | Never pause active scene playlist | `false` | Keep the active scene playlist playing while viewing another scene. |
+| Debug logging | `false` | Write local scene music playback decisions to the browser console. |
 
-These settings are client-side, so each user can choose their own preview volume, channel, and pause behavior.
+These settings are client-side, so each user can choose their own preview volume, channel, pause behavior, and logging preference.
 
 If both active playlist pause settings are enabled, **Never pause active scene playlist** takes priority.
 
