@@ -92,10 +92,9 @@ const LocalSceneViewMusic = {
 
   getLocalPlaybackOptions(soundDoc) {
     return {
-      src: soundDoc.path,
       volume: game.settings.get(MODULE_ID, SETTINGS.volume),
       loop: soundDoc.repeat ?? true,
-      channel: game.settings.get(MODULE_ID, SETTINGS.channel)
+      context: game.audio[game.settings.get(MODULE_ID, SETTINGS.channel)]
     };
   },
 
@@ -224,10 +223,7 @@ const LocalSceneViewMusic = {
 
   async playLocalSound(scene, soundDoc, soundKey) {
     try {
-      this.local.sound = await foundry.audio.AudioHelper.play(
-        this.getLocalPlaybackOptions(soundDoc),
-        false
-      );
+      this.local.sound = await game.audio.play(soundDoc.path, this.getLocalPlaybackOptions(soundDoc));
 
       this.local.sceneId = scene.id;
       this.local.key = soundKey;
@@ -279,7 +275,9 @@ const LocalSceneViewMusic = {
         {
           src: soundDoc.path,
           volume: soundDoc.volume ?? 0.8,
-          loop: soundDoc.repeat ?? true
+          loop: soundDoc.repeat ?? true,
+          channel: soundDoc.channel || soundDoc.parent?.channel || "music",
+          autoplay: true
         },
         false
       );
