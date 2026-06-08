@@ -114,6 +114,71 @@ const LocalSceneViewMusic = {
     return soundDoc?.path ? soundDoc : null;
   },
 
+  getScenePlaylist(scene) {
+    const soundDoc = this.getSceneSound(scene);
+    if (soundDoc?.parent?.name) return soundDoc.parent;
+
+    const playlist = scene?.playlist;
+    if (playlist?.sounds) return playlist;
+
+    const playlistId = playlist ?? scene?._source?.playlist;
+    return playlistId ? game.playlists?.get(playlistId) : null;
+  },
+
+  getPlaylistKey(playlist) {
+    return playlist?.name ?? null;
+  },
+
+  scenesUseSamePlaylist(a, b) {
+    const aKey = this.getPlaylistKey(this.getScenePlaylist(a));
+    const bKey = this.getPlaylistKey(this.getScenePlaylist(b));
+
+    return Boolean(aKey && bKey && aKey === bKey);
+  },
+
+  getSoundDocs(collection) {
+    if (!collection) return [];
+
+    let docs;
+    if (Array.isArray(collection)) {
+      docs = collection;
+    } else if (Array.isArray(collection.contents)) {
+      docs = collection.contents;
+    } else if (typeof collection.values === "function") {
+      docs = Array.from(collection.values());
+    } else {
+      docs = Array.from(collection);
+    }
+
+    return docs
+      .map(entry => entry?.value ?? (Array.isArray(entry) ? entry[1] : entry))
+      .filter(Boolean);
+  },
+
+  getPlaylistSounds(playlist) {
+    return this.getSoundDocs(playlist?.sounds);
+  },
+
+  isSoundPlayingLocally(soundDoc) {
+    const audio = soundDoc?.sound;
+    return Boolean(soundDoc?.playing || audio?.playing);
+  },
+
+  getActiveSoundDocs(scene) {
+    const playlist = this.getScenePlaylist(scene);
+    const playlistPlayingSounds = this.getSoundDocs(playlist?.playingSounds).filter(soundDoc => soundDoc?.path);
+    if (playlistPlayingSounds.length) return playlistPlayingSounds;
+
+    const playingSounds = this.getPlaylistSounds(playlist).filter(soundDoc => {
+      return soundDoc?.path && this.isSoundPlayingLocally(soundDoc);
+    });
+
+    if (playingSounds.length) return playingSounds;
+
+    const sceneSound = this.getSceneSound(scene);
+    return sceneSound ? [sceneSound] : [];
+  },
+
   getSoundKey(soundDoc) {
     if (!soundDoc?.path) return null;
 
@@ -231,15 +296,22 @@ const LocalSceneViewMusic = {
 
     const activeScene = game.scenes?.active;
     if (!activeScene || activeScene.id === viewedScene?.id) return;
+    if (this.pausedActive?.sceneId === activeScene.id) return;
 
-    const soundDoc = this.getSceneSound(activeScene);
-    const soundKey = this.getSoundKey(soundDoc);
-    if (!soundKey || this.pausedActive?.key === soundKey) return;
+    const pausedSounds = [];
 
-    if (!this.pauseSoundLocally(soundDoc)) return;
+    for (const soundDoc of this.getActiveSoundDocs(activeScene)) {
+      if (!this.pauseSoundLocally(soundDoc)) continue;
+      pausedSounds.push(soundDoc);
+    }
 
-    this.pausedActive = { sceneId: activeScene.id, key: soundKey };
-    this.log(`Paused active scene sound while viewing "${viewedScene?.name ?? "another scene"}"`, soundDoc.path);
+    if (!pausedSounds.length) return;
+
+    this.pausedActive = { sceneId: activeScene.id, sounds: pausedSounds };
+    this.log(
+      `Paused active scene sound while viewing "${viewedScene?.name ?? "another scene"}"`,
+      pausedSounds.map(soundDoc => soundDoc.path)
+    );
   },
 
   async resumeActiveSound() {
@@ -247,15 +319,34 @@ const LocalSceneViewMusic = {
     if (!paused) return;
 
     const activeScene = game.scenes?.active;
-    const soundDoc = this.getSceneSound(activeScene);
-
     this.pausedActive = null;
 
-    if (!activeScene || activeScene.id !== paused.sceneId || this.getSoundKey(soundDoc) !== paused.key) return;
+    if (!activeScene || activeScene.id !== paused.sceneId) return;
 
-    if (await this.resumeSoundLocally(soundDoc)) {
-      this.log(`Resumed active scene sound for "${activeScene.name}"`, soundDoc.path);
+    const resumedSounds = [];
+
+    for (const soundDoc of paused.sounds ?? []) {
+      if (!soundDoc?.path) continue;
+      if (!(await this.resumeSoundLocally(soundDoc))) continue;
+      resumedSounds.push(soundDoc);
     }
+
+    if (resumedSounds.length) {
+      this.log(
+        `Resumed active scene sound for "${activeScene.name}"`,
+        resumedSounds.map(soundDoc => soundDoc.path)
+      );
+    }
+  },
+
+  async useActivePlaylistForView(scene) {
+    const activeScene = game.scenes?.active;
+    if (!this.scenesUseSamePlaylist(activeScene, scene)) return false;
+
+    await this.stopLocalSound(`view changed to "${scene.name}" using active scene playlist`);
+    await this.resumeActiveSound();
+    this.log(`Continuing active scene playlist while viewing "${scene.name}"`, this.getScenePlaylist(scene)?.name);
+    return true;
   },
 
   async handleCanvasReady(canvas) {
@@ -295,6 +386,8 @@ const LocalSceneViewMusic = {
       this.log(`Continuing local view sound for "${scene.name}"`, soundDoc.path);
       return;
     }
+
+    if (await this.useActivePlaylistForView(scene)) return;
 
     await this.stopLocalSound(`view changed to "${scene.name}"`);
 

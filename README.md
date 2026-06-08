@@ -9,6 +9,7 @@ Foundry normally starts a scene playlist when the scene is activated. This modul
 - Plays the viewed scene's configured playlist sound locally.
 - Does not broadcast playback changes to other users.
 - Stops the previous viewed scene sound when switching to a different track.
+- Keeps playback continuous when viewed scenes use the active scene's same playlist.
 - Keeps local preview playback continuous when multiple viewed scenes use the same sound.
 - Pauses the active scene's music locally while previewing a different scene with different music.
 - Can optionally pause the active scene's music while viewing scenes with no playlist sound.
@@ -18,7 +19,9 @@ Foundry normally starts a scene playlist when the scene is activated. This modul
 
 ## Continuous Playback
 
-If this module is already playing local preview music and you move between viewed scenes that use the same audio path and loop setting, the module keeps the existing sound playing instead of stopping and restarting it.
+If a viewed scene uses the same parent playlist as the active scene, the module keeps the active playlist running instead of starting the viewed scene's configured initial track locally.
+
+If this module is already playing local preview music and you move between viewed scenes that use the same audio path and loop setting, the module keeps that local sound playing instead of stopping and restarting it.
 
 This is useful for groups of scenes that share the same background music, such as different map levels, day/night variants, or alternate views of the same location.
 
